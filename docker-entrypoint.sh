@@ -39,18 +39,7 @@ echo "==== Updating Space Engineers (Windows version) ===="
 gosu $USER_NAME $STEAMCMD +force_install_dir $SE_DIR $LOGIN_CMD +app_update $APP_ID validate +quit
 
 # -------------------------------
-# 4️⃣ Workshop Mods
-# -------------------------------
-if [ -n "$WORKSHOP_MOD_IDS" ]; then
-    IFS=',' read -ra MODS <<< "$WORKSHOP_MOD_IDS"
-    for MOD_ID in "${MODS[@]}"; do
-        echo "Downloading mod $MOD_ID"
-        gosu $USER_NAME $STEAMCMD +force_install_dir $SE_DIR $LOGIN_CMD +workshop_download_item $WORKSHOP_APP_ID $MOD_ID validate +quit
-    done
-fi
-
-# -------------------------------
-# 5️⃣ Backup loop
+# 4️⃣ Backup loop
 # -------------------------------
 BACKUP_INTERVAL=${BACKUP_INTERVAL:-3600}
 BACKUP_RETENTION=${BACKUP_RETENTION:-5}
@@ -70,7 +59,7 @@ backup_loop() {
 backup_loop &
 
 # -------------------------------
-# 6️⃣ Start Space Engineers via Proton
+# 5️⃣ Start Space Engineers via Proton
 # -------------------------------
 echo "==== Starting Space Engineers Dedicated Server via Proton ===="
 
