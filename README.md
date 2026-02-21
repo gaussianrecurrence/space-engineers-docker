@@ -102,14 +102,6 @@ Make sure these ports are open in your firewall if hosting publicly.
 
 Workshop mods are downloaded automatically at container startup.
 
-To enable mods, set the environment variable:
-
-```bash
--e WORKSHOP_MOD_IDS=1234567890,9876543210
-```
-
-Comma-separated list of Steam Workshop mod IDs.
-
 Internally, mods are downloaded using:
 
 ```
@@ -126,7 +118,7 @@ steamapps/workshop/content/244850/<mod_id>
 
 ## 🔧 Loading Mods in Server Config
 
-Mods must also be added to your `SpaceEngineers-Dedicated.cfg`:
+Mods can be added to your `SpaceEngineers-Dedicated.cfg`:
 
 ```xml
 <Mods>
