@@ -1,69 +1,83 @@
 #!/bin/bash
 set -e
 
-APP_ID=298740
-WORKSHOP_APP_ID=244850
-INSTALL_DIR="/home/steam/spaceengineers"
-INSTANCE_DIR="/home/steam/instance"
-BACKUP_DIR="/home/steam/backups"
-STEAMCMD="/home/steam/steamcmd/steamcmd.sh"
+# -------------------------------
+# 1️⃣ Host user mapping
+# -------------------------------
+PUID=${PUID:-1000}
+PGID=${PGID:-1000}
+USER_NAME=svc_runner
+GROUP_NAME=svc_runner
 
-BACKUP_INTERVAL=${BACKUP_INTERVAL:-3600}
-BACKUP_RETENTION=${BACKUP_RETENTION:-5}
-
-mkdir -p "$INSTALL_DIR" "$INSTANCE_DIR" "$BACKUP_DIR"
-
-echo "==== Updating Space Engineers Dedicated Server ===="
-
-if [ -n "$STEAM_USER" ] && [ -n "$STEAM_PASS" ]; then
-    LOGIN_CMD="+login $STEAM_USER $STEAM_PASS"
-else
-    LOGIN_CMD="+login anonymous"
+if ! getent group ${GROUP_NAME} >/dev/null 2>&1; then
+    groupadd -g "$PGID" ${GROUP_NAME}
 fi
 
-$STEAMCMD \
-    +force_install_dir $INSTALL_DIR \
-    $LOGIN_CMD \
-    +app_update $APP_ID validate \
-    +quit
+if ! id -u ${USER_NAME} >/dev/null 2>&1; then
+    useradd -u "$PUID" -g "$PGID" -m -s /bin/bash ${USER_NAME}
+fi
 
-echo "==== Downloading Workshop Mods ===="
+export HOME=/home/steam
 
+# -------------------------------
+# 2️⃣ Directories
+# -------------------------------
+mkdir -p $SE_DIR $INSTANCE_DIR $BACKUP_DIR $PROTON_DIR
+chown -R $PUID:$PGID $SE_DIR $INSTANCE_DIR $BACKUP_DIR $PROTON_DIR
+
+STEAMCMD="$STEAMCMD_DIR/steamcmd.sh"
+
+# -------------------------------
+# 3️⃣ SteamCMD Update
+# -------------------------------
+LOGIN_CMD="+login anonymous"
+if [ -n "$STEAM_USER" ] && [ -n "$STEAM_PASS" ]; then
+    LOGIN_CMD="+login $STEAM_USER $STEAM_PASS"
+fi
+
+echo "==== Updating Space Engineers (Windows version) ===="
+gosu $USER_NAME $STEAMCMD +force_install_dir $SE_DIR $LOGIN_CMD +app_update $APP_ID validate +quit
+
+# -------------------------------
+# 4️⃣ Workshop Mods
+# -------------------------------
 if [ -n "$WORKSHOP_MOD_IDS" ]; then
     IFS=',' read -ra MODS <<< "$WORKSHOP_MOD_IDS"
     for MOD_ID in "${MODS[@]}"; do
         echo "Downloading mod $MOD_ID"
-        $STEAMCMD \
-            $LOGIN_CMD \
-            +workshop_download_item $WORKSHOP_APP_ID $MOD_ID validate \
-            +quit
+        gosu $USER_NAME $STEAMCMD +force_install_dir $SE_DIR $LOGIN_CMD +workshop_download_item $WORKSHOP_APP_ID $MOD_ID validate +quit
     done
 fi
 
+# -------------------------------
+# 5️⃣ Backup loop
+# -------------------------------
+BACKUP_INTERVAL=${BACKUP_INTERVAL:-3600}
+BACKUP_RETENTION=${BACKUP_RETENTION:-5}
+
 backup_loop() {
     while true; do
-        sleep "$BACKUP_INTERVAL"
-
+        sleep $BACKUP_INTERVAL
         TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
         BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
-
-        echo "==== Creating backup: $BACKUP_FILE ===="
+        echo "==== Creating backup $BACKUP_FILE ===="
         tar -czf "$BACKUP_FILE" -C "$INSTANCE_DIR" .
-
-        echo "==== Applying retention policy (keep last $BACKUP_RETENTION) ===="
         ls -1t "$BACKUP_DIR"/backup_*.tar.gz | tail -n +$((BACKUP_RETENTION+1)) | xargs -r rm --
-
         echo "==== Backup complete ===="
     done
 }
 
-echo "==== Starting Backup Service (interval: $BACKUP_INTERVAL seconds) ===="
 backup_loop &
 
-echo "==== Starting Space Engineers Dedicated Server ===="
-cd $INSTALL_DIR/DedicatedServer64
+# -------------------------------
+# 6️⃣ Start Space Engineers via Proton
+# -------------------------------
+echo "==== Starting Space Engineers Dedicated Server via Proton ===="
 
-exec ./SpaceEngineersDedicated \
+cd $SE_DIR/DedicatedServer64
+
+# Run using Proton / Wine
+exec gosu $USER_NAME xvfb-run -a wine64 SpaceEngineersDedicated.exe \
     -console \
     -path "$INSTANCE_DIR" \
     -config "$INSTANCE_DIR/SpaceEngineers-Dedicated.cfg"
