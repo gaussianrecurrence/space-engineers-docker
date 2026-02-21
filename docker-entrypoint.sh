@@ -2,7 +2,7 @@
 set -e
 
 # -------------------------------
-# 1️⃣ Host user mapping
+# Host user mapping
 # -------------------------------
 PUID=${PUID:-1000}
 PGID=${PGID:-1000}
@@ -20,7 +20,7 @@ fi
 export HOME=/home/steam
 
 # -------------------------------
-# 2️⃣ Directories
+# Directories
 # -------------------------------
 mkdir -p $SE_DIR $INSTANCE_DIR $BACKUP_DIR $PROTON_DIR
 chown -R $PUID:$PGID $SE_DIR $INSTANCE_DIR $BACKUP_DIR $PROTON_DIR
@@ -28,7 +28,7 @@ chown -R $PUID:$PGID $SE_DIR $INSTANCE_DIR $BACKUP_DIR $PROTON_DIR
 STEAMCMD="$STEAMCMD_DIR/steamcmd.sh"
 
 # -------------------------------
-# 3️⃣ SteamCMD Update
+# SteamCMD Update
 # -------------------------------
 LOGIN_CMD="+login anonymous"
 if [ -n "$STEAM_USER" ] && [ -n "$STEAM_PASS" ]; then
@@ -39,7 +39,7 @@ echo "==== Updating Space Engineers (Windows version) ===="
 gosu $USER_NAME $STEAMCMD +force_install_dir $SE_DIR $LOGIN_CMD +app_update $APP_ID validate +quit
 
 # -------------------------------
-# 4️⃣ Workshop Mods
+# Workshop Mods
 # -------------------------------
 if [ -n "$WORKSHOP_MOD_IDS" ]; then
     IFS=',' read -ra MODS <<< "$WORKSHOP_MOD_IDS"
@@ -50,7 +50,7 @@ if [ -n "$WORKSHOP_MOD_IDS" ]; then
 fi
 
 # -------------------------------
-# 5️⃣ Backup loop
+# Backup loop
 # -------------------------------
 BACKUP_INTERVAL=${BACKUP_INTERVAL:-3600}
 BACKUP_RETENTION=${BACKUP_RETENTION:-5}
@@ -70,7 +70,7 @@ backup_loop() {
 backup_loop &
 
 # -------------------------------
-# 6️⃣ Start Space Engineers via Proton
+# Start Space Engineers via Proton
 # -------------------------------
 echo "==== Starting Space Engineers Dedicated Server via Proton ===="
 
