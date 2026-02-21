@@ -22,8 +22,8 @@ else
 fi
 
 $STEAMCMD \
-    $LOGIN_CMD \
     +force_install_dir $INSTALL_DIR \
+    $LOGIN_CMD \
     +app_update $APP_ID validate \
     +quit
 
