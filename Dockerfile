@@ -5,7 +5,6 @@ ENV STEAMCMD_DIR=/home/steam/steamcmd
 ENV SE_DIR=/home/steam/spaceengineers
 ENV INSTANCE_DIR=/home/steam/instance
 ENV BACKUP_DIR=/home/steam/backups
-ENV PROTON_DIR=/home/steam/proton
 ENV APP_ID=298740
 ENV WORKSHOP_APP_ID=244850
 
@@ -21,6 +20,7 @@ RUN dpkg --add-architecture i386 && \
         tar gzip bash cron \
         git unzip \
         wine64 wine32 \
+        cabextract \
         xvfb \
         sudo \
         gosu \
@@ -38,20 +38,38 @@ WORKDIR /home/steam
 # -------------------------------
 # 3️⃣ Install SteamCMD
 # -------------------------------
-RUN cd $STEAMCMD_DIR && \
+RUN cd ${STEAMCMD_DIR} && \
     wget https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz && \
     tar -xvzf steamcmd_linux.tar.gz && \
-    rm steamcmd_linux.tar.gz && \
-    chown -R steam:steam $STEAMCMD_DIR
+    rm steamcmd_linux.tar.gz
 
 # -------------------------------
-# 4️⃣ Copy entrypoint
+#  4️⃣ CInstall winetricks
+# -------------------------------
+RUN curl -L https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks > /usr/local/bin/winetricks && \
+    chmod +x /usr/local/bin/winetricks
+
+ENV WINEARCH=win64
+ENV WINEDEBUG=-all
+ENV WINEPREFIX=/home/steam/wine
+
+USER steam
+RUN Xvfb :5 -screen 0 1024x768x16 & \
+    env WINEDLLOVERRIDES="mscoree=d" wineboot --init /nogui && \
+    winetricks corefonts && \
+    winetricks sound=disabled && \
+    env DISPLAY=:5.0 winetricks -q vcrun2019 && \
+    env DISPLAY=:5.0 winetricks -q --force dotnet48
+USER root
+
+# -------------------------------
+# 5️⃣ Copy entrypoint
 # -------------------------------
 COPY --chown=steam:steam docker-entrypoint.sh /home/steam/docker-entrypoint.sh
 RUN chmod +x /home/steam/docker-entrypoint.sh
 
 # -------------------------------
-# 5️⃣ Security: Host user mapping
+# 6️⃣ Security: Host user mapping
 # -------------------------------
 ENV PUID=1000
 ENV PGID=1000
