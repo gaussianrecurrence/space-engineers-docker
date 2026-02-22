@@ -22,11 +22,11 @@ Steam App IDs used:
 
 # ✨ Features
 
-- ✅ Automatic server installation via SteamCMD  
-- ✅ Automatic server updates on container start  
-- ✅ Steam Workshop mod download support  
-- ✅ Optional private mod support (Steam login)  
-- ✅ Persistent world/config support via volume mount  
+- ✅ Automatic server installation via SteamCMD 
+- ✅ Automatic server updates on container start
+- ✅ Optional private mod support (Steam login)
+- ✅ Persistent world/config support via volume mount
+- ✅ Backs up world
 - ✅ Runs as non-root user  
 
 ---
@@ -68,6 +68,7 @@ docker run -d \
   -p 27016:27016/udp \
   -p 27016:27016/tcp \
   -v $(pwd)/instance:/home/steam/instance \
+  -v $(pwd)/backups:/home/steam/backups \
   -v $(pwd)/spaceengineers:/home/steam/spaceengineers \
   spaceengineers-ds
 ```
@@ -78,10 +79,11 @@ docker run -d \
 
 You **must mount volumes** to persist data.
 
-| Host Path | Container Path | Purpose |
-|------------|----------------|----------|
-| `./instance` | `/home/steam/instance` | World saves & config |
-| `./spaceengineers` | `/home/steam/spaceengineers` | Server installation |
+| Host Path          | Container Path               | Purpose              |
+|--------------------|------------------------------|----------------------|
+| `./instance`       | `/home/steam/instance`       | World saves & config |
+| `./backups`        | `/home/steam/backups`        | World backups        |
+| `./spaceengineers` | `/home/steam/spaceengineers` | Server installation  |
 
 If volumes are not mounted, all data will be lost when the container is removed.
 
@@ -100,6 +102,17 @@ Make sure these ports are open in your firewall if hosting publicly.
 
 # 🧩 Mod Support
 
+## 🔧 Loading Mods in Server Config
+
+Mods can be added to your `SpaceEngineers-Dedicated.cfg`:
+
+```xml
+<Mods>
+  <ModItem FriendlyName="Example Mod" PublishedFileId="1234567890" />
+</Mods>
+```
+
+The server reads this config and loads the mods automatically.
 Workshop mods are downloaded automatically at container startup.
 
 Internally, mods are downloaded using:
@@ -114,19 +127,6 @@ They are stored in:
 steamapps/workshop/content/244850/<mod_id>
 ```
 
----
-
-## 🔧 Loading Mods in Server Config
-
-Mods can be added to your `SpaceEngineers-Dedicated.cfg`:
-
-```xml
-<Mods>
-  <ModItem FriendlyName="Example Mod" PublishedFileId="1234567890" />
-</Mods>
-```
-
-The server reads this config and loads the mods automatically.
 
 ---
 
@@ -180,7 +180,7 @@ CPU single-core performance is more important than core count.
 
 # 📜 License
 
-MIT License
+Apache License 2.0
 
 ---
 
